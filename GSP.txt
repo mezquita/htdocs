@@ -1,0 +1,109 @@
+yum -y update
+yum -y install httpd24
+yum -y install httpd24-httpd-devel.x86_64
+yum -y remove php-common
+yum -y install php-fpm
+/etc/init.d/php-fpm start
+yum -y install php55-1.1-6.el6.x86_64
+yum -y install php55-php
+ln -s /opt/rh/php55/root/usr/bin/php /usr/bin/php
+ln -s /opt/rh/php55/root/etc/php.ini /etc/php.ini
+yum -y install java
+service httpd24-httpd restart
+　
+yum -y remove mysql*
+yum -y install http://dev.mysql.com/get/mysql-community-release-el6-5.noarch.rpm
+yum -y install mysql mysql-devel mysql-server mysql-utilities
+yum -y install php55-php-mysqlnd.x86_64
+mysql_install_db
+dd if=/dev/zero of=/swapfile bs=1M count=1024
+mkswap /swapfile
+swapon /swapfile
+swapon -s
+sudo sh -c "echo '/swapfile swap swap defaults 0 0' >> /etc/fstab"
+chown -R mysql:mysql /var/lib/mysql
+cd /var/lib/mysql/
+rm -rf ibdata1 ib_logfile0 ib_logfile1 ib_logfile101
+service mysqld restart
+　
+yum -y install libwmf
+　
+rpm -ivh http://ftp.riken.jp/Linux/fedora/epel/6/x86_64/epel-release-6-8.noarch.rpm
+yum -y install proftpd
+
+mkdir /tmp/src
+cd /tmp/src
+yum -y install gcc
+yum -y install ImageMagick
+yum -y remove ImageMagick
+yum -y install jpegoptim
+yum -y install freetype-devel giflib-devel perl-devel djvulibre-devel libwmf-devel jasper-devel libtool-ltdl-devel libxml2-devel librsvg2-devel OpenEXR-devel
+yum -y install bzip2-devel freetype-devel libjpeg-devel libpng-devel libtiff-devel giflib-devel zlib-devel ghostscript-devel djvulibre-devel libwmf-devel jasper-devel libtool-ltdl-devel libX11-devel libXext-devel libXt-devel lcms-devel libxml2-devel librsvg2-devel OpenEXR-devel
+yum -y install openexr fftw3
+wget http://www.imagemagick.org/download/ImageMagick.tar.gz
+tar zxvf ImageMagick.tar.gz
+cd ImageMagick-6.8.9-5
+./configure
+make
+make install
+rm /usr/bin/convert
+ln -s /usr/local/bin/convert /usr/bin/convert
+rm -rf ImageMagick-6.8.9-5 ImageMagick.tar.gz
+cd /tmp/src
+
+
+yum -y install memcached.`uname -i`
+cp -pc /etc/sysconfig/memcached{,.bak}
+cd /tmp/src
+wget http://54.92.56.66/memcached
+rm -rf /etc/sysconfig/memcached
+cp memcached /etc/sysconfig/.
+/sbin/chkconfig memcached on
+/sbin/service memcached start
+yum -y install php-devel
+wget http://pecl.php.net/get/memcache-2.2.7.tgz
+tar xvzf memcache-2.2.7.tgz
+cd memcache-2.2.7
+/usr/bin/phpize
+sudo ./configure --with-php-config=/usr/bin/php-config
+sudo make -j 4
+sudo make install
+#####
+##### memcacheつかうなら、php.ini　に下記追記
+##### ↓　これ　コメントは外すこと
+##### extension=memcache.so
+
+
+cd /opt/rh/httpd24/root/var/www
+wget https://github.com/cakephp/cakephp/zipball/2.4.7
+unzip 2.4.7
+mv cakephp-cakephp-a795764 cakephp
+chown -R apache:apache cakephp
+chmod -R 755 cakephp
+chmod -R 777 cakephp/app/tmp
+cp -pc /opt/rh/httpd24/root/var/www/cakephp/app/Config/core.php{,.back}
+cp -pc /opt/rh/httpd24/root/var/www/cakephp/app/Config/database.php.default{,.back}
+cd /tmp/src
+wget http://54.92.56.66/httpd.conf
+wget http://54.92.56.66/database.php
+wget http://54.92.56.66/core.php
+wget http://54.92.56.66/ddl.ddl
+wget http://54.92.56.66/CakephpController.php
+wget http://54.92.56.66/php.ini
+wget http://54.92.56.66/setup.conf
+wget http://54.92.56.66/gsp.conf
+cat php.ini > /opt/rh/php55/root/etc/php.ini
+cat database.php > /opt/rh/httpd24/root/var/www/cakephp/app/Config/database.php
+cat core.php > /opt/rh/httpd24/root/var/www/cakephp/app/Config/core.php
+mysql -u root < ddl.ddl
+mkdir /opt/rh/httpd24/root/var/www/html/cakephp/app/View/Cakephp
+chown apache:apache /opt/rh/httpd24/root/var/www/html/cakephp/app/View/Cakephp
+touch /opt/rh/httpd24/root/var/www/html/cakephp/app/View/Cakephp/index.ctp
+chown apache:apache /opt/rh/httpd24/root/var/www/html/cakephp/app/View/Cakephp/index.ctp
+chown apache:apache CakephpController.php
+chmod 755 CakephpController.php
+cp CakephpController.php /opt/rh/httpd24/root/var/www/html/cakephp/app/Controller/.
+cat httpd.conf > /opt/rh/httpd24/root/etc/httpd/conf/http.conf
+cp setup.conf /opt/rh/httpd24/root/etc/httpd/conf.d/.
+#cp gsp.conf /opt/rh/httpd24/root/etc/httpd/conf.d/.
+service httpd24-httpd restart
